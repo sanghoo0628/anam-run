@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>뛰어? 말아?</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #2563eb;
+    --accent-text: #ffffff;
+    --chip: #eef2ff;
+
+    /* 판정 색 */
+    --ok: #15803d;     --ok-bg: #dcfce7;
+    --jog: #a16207;    --jog-bg: #fef9c3;
+    --run: #c2410c;    --run-bg: #ffedd5;
+    --no: #b91c1c;     --no-bg: #fee2e2;
+    --none: #6b7280;   --none-bg: #f3f4f6;
+
+    --tabbar-h: 68px;
+    --radius: 18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1120;
+      --card: #111a2e;
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --line: #1f2a44;
+      --accent: #3b82f6;
+      --chip: #1e293b;
+      --ok-bg: #0f2e1c;  --ok: #4ade80;
+      --jog-bg: #33290a; --jog: #facc15;
+      --run-bg: #3a1d0b; --run: #fb923c;
+      --no-bg: #3b1212;  --no: #f87171;
+      --none-bg: #1e293b; --none: #94a3b8;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Pretendard", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 16px calc(var(--tabbar-h) + 24px + env(safe-area-inset-bottom));
+  }
+
+  /* 상단 */
+  header {
+    padding: calc(16px + env(safe-area-inset-top)) 0 8px;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  }
+  header h1 { margin: 0; font-size: 26px; letter-spacing: -0.02em; }
+  header .sub { color: var(--muted); font-size: 14px; }
+  .test-badge {
+    display: none;
+    font-size: 13px; font-weight: 700;
+    padding: 3px 10px; border-radius: 999px;
+    background: var(--jog-bg); color: var(--jog);
+  }
+  body.test-mode .test-badge { display: inline-block; }
+
+  /* 탭 패널 */
+  .panel { display: none; }
+  .panel.active { display: block; }
+  h2 { font-size: 19px; margin: 18px 0 8px; }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin: 12px 0;
+  }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row.between { justify-content: space-between; }
+  .muted { color: var(--muted); }
+  .small { font-size: 14px; }
+  .notice {
+    margin: 20px 0 8px; padding: 12px 14px;
+    border-radius: 12px; background: var(--chip);
+    font-size: 15px; color: var(--muted);
+  }
+  .warn {
+    margin: 12px 0; padding: 12px 14px; border-radius: 12px;
+    background: var(--run-bg); color: var(--run); font-size: 15px; font-weight: 600;
+  }
+
+  /* 입력 요소: 손가락으로 누르기 쉽게 크게 */
+  label.field { display: block; margin: 12px 0; }
+  label.field > span, .field-label { display: block; font-size: 14px; color: var(--muted); margin-bottom: 4px; }
+  select, input[type="text"], input[type="number"] {
+    width: 100%; min-height: 52px;
+    padding: 10px 12px;
+    font-size: 18px; color: var(--text);
+    background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px;
+  }
+  button {
+    min-height: 52px; padding: 0 18px;
+    font-size: 18px; font-weight: 700;
+    border: 0; border-radius: 12px;
+    background: var(--accent); color: var(--accent-text);
+    cursor: pointer;
+  }
+  button.secondary { background: var(--chip); color: var(--text); }
+  button.danger { background: var(--no); color: #fff; }
+  button.ghost { background: transparent; color: var(--no); min-height: 44px; padding: 0 10px; font-size: 16px; }
+  button:disabled { opacity: .4; cursor: default; }
+  button:active:not(:disabled) { transform: scale(.98); }
+
+  /* 상행/하행/전체 세그먼트 */
+  .segmented {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    background: var(--chip); border-radius: 12px; padding: 4px; gap: 4px;
+  }
+  .segmented button {
+    min-height: 46px; font-size: 17px;
+    background: transparent; color: var(--muted);
+  }
+  .segmented button[aria-pressed="true"] {
+    background: var(--card); color: var(--text);
+    box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  }
+
+  /* 토글 스위치 */
+  .switch { position: relative; display: inline-block; width: 52px; height: 32px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider {
+    position: absolute; inset: 0; border-radius: 999px;
+    background: var(--line); transition: background .15s;
+  }
+  .switch .slider::before {
+    content: ""; position: absolute; left: 3px; top: 3px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: #fff; transition: transform .15s;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  }
+  .switch input:checked + .slider { background: var(--jog); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .origin-info { margin-top: 8px; font-size: 15px; color: var(--muted); }
+  .origin-info b { color: var(--text); }
+
+  /* 열차 카드 */
+  .train { padding: 0; overflow: hidden; }
+  .train .info { padding: 14px 16px 10px; }
+  .train .dest { font-weight: 700; font-size: 17px; }
+  .train .dir {
+    flex: none;
+    font-size: 13px; font-weight: 700; padding: 2px 10px; border-radius: 999px;
+    background: var(--chip); color: var(--muted);
+  }
+  .train .time { font-size: 36px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 4px; }
+  .train .time .est { font-size: 15px; font-weight: 600; color: var(--muted); margin-left: 6px; }
+  .train .msg { font-size: 14px; color: var(--muted); }
+  .verdict {
+    padding: 16px;
+    font-size: 26px; font-weight: 800; line-height: 1.3;
+    background: var(--none-bg); color: var(--none);
+  }
+  .verdict .detail { display: block; font-size: 15px; font-weight: 600; margin-top: 4px; opacity: .9; }
+  .verdict .detail.alert { font-weight: 800; }
+  .verdict.ok   { background: var(--ok-bg);  color: var(--ok); }
+  .verdict.jog  { background: var(--jog-bg); color: var(--jog); }
+  .verdict.run  { background: var(--run-bg); color: var(--run); }
+  .verdict.no   { background: var(--no-bg);  color: var(--no); }
+  .verdict.none { font-size: 20px; }
+
+  .status { min-height: 22px; font-size: 14px; color: var(--muted); margin: 8px 2px; }
+  .error {
+    padding: 12px 14px; border-radius: 12px; margin: 8px 0;
+    background: var(--no-bg); color: var(--no);
+    font-size: 15px;
+  }
+  .error button { margin-top: 10px; min-height: 44px; font-size: 16px; }
+  .empty { text-align: center; padding: 28px 16px; color: var(--muted); }
+
+  /* 속도 측정 카드 */
+  .mode-title { font-size: 20px; font-weight: 800; margin: 0; }
+  .speed { font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .speed .kmh { font-size: 18px; color: var(--muted); font-weight: 700; margin-left: 6px; }
+  .speed.unset { font-size: 18px; color: var(--muted); font-weight: 600; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .live {
+    margin-top: 12px; padding: 12px; border-radius: 12px;
+    background: var(--chip);
+  }
+  .live .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; }
+  .live .stat b { display: block; font-size: 22px; font-variant-numeric: tabular-nums; }
+  .live .stat span { font-size: 13px; color: var(--muted); }
+  .live .gps { font-size: 14px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .result-msg { font-size: 15px; margin-top: 8px; min-height: 0; }
+  .result-msg.ok { color: var(--ok); font-weight: 700; }
+  .result-msg.bad { color: var(--no); font-weight: 700; }
+  .manual { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+
+  /* 출발지 목록 */
+  .origin-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 16px; }
+  .origin-item .name { font-weight: 700; font-size: 18px; word-break: break-all; }
+
+  /* 하단 탭바 */
+  nav.tabbar {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--card);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom);
+    z-index: 10;
+  }
+  nav.tabbar .inner {
+    max-width: 480px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(3, 1fr);
+  }
+  nav.tabbar button {
+    height: var(--tabbar-h); min-height: 0; border-radius: 0;
+    background: transparent; color: var(--muted);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+    font-size: 14px; font-weight: 700;
+  }
+  nav.tabbar button .ico { font-size: 24px; line-height: 1; }
+  nav.tabbar button[aria-selected="true"] { color: var(--accent); }
+  nav.tabbar button { position: relative; }
+  nav.tabbar .rec { display: none; width: 9px; height: 9px; border-radius: 50%; background: var(--no); position: absolute; top: 12px; left: calc(50% + 14px); }
+  body.measuring nav.tabbar .rec { display: block; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>뛰어? 말아?</h1>
+      <div class="sub">안암역 6호선 탑승 판정</div>
+    </div>
+    <span class="test-badge">테스트 모드</span>
+  </header>
+
+  <!-- ① 판정 -->
+  <section class="panel" id="tab-judge" role="tabpanel" aria-labelledby="tabbtn-judge">
+    <div class="card">
+      <label class="field" style="margin-top:0">
+        <span>출발지</span>
+        <select id="origin-select"></select>
+      </label>
+      <div class="origin-info" id="origin-info"></div>
+      <div style="margin-top:12px">
+        <span class="field-label">방향</span>
+        <div class="segmented" id="dir-seg" role="group" aria-label="방향 선택">
+          <button type="button" data-dir="상행">상행</button>
+          <button type="button" data-dir="하행">하행</button>
+          <button type="button" data-dir="전체">전체</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row between">
+      <button type="button" id="refresh-btn">새로고침</button>
+      <label class="row small" for="test-toggle" style="cursor:pointer">
+        <span>테스트 모드</span>
+        <span class="switch">
+          <input type="checkbox" id="test-toggle">
+          <span class="slider"></span>
+        </span>
+      </label>
+    </div>
+    <div class="status" id="status"></div>
+    <div id="judge-error"></div>
+
+    <div id="train-list"></div>
+
+    <div class="notice">계단·횡단보도·에스컬레이터에서는 뛰지 마세요.</div>
+  </section>
+
+  <!-- ② 속도 측정 -->
+  <section class="panel" id="tab-speed" role="tabpanel" aria-labelledby="tabbtn-speed">
+    <h2>내 속도 측정</h2>
+    <div class="notice" style="margin-top:0">걷기·가볍게 뛰기는 1분 이상, 전력 질주는 트인 곳에서 100m 정도 측정하세요.<br>측정 중에는 화면을 켜 두세요.</div>
+    <div id="speed-warn"></div>
+    <div id="speed-cards"></div>
+  </section>
+
+  <!-- ③ 출발지 관리 -->
+  <section class="panel" id="tab-origins" role="tabpanel" aria-labelledby="tabbtn-origins">
+    <h2>출발지 추가</h2>
+    <form class="card" id="origin-form" autocomplete="off">
+      <label class="field" style="margin-top:0">
+        <span>이름</span>
+        <input type="text" id="origin-name" placeholder="예: 하나스퀘어" maxlength="20">
+      </label>
+      <label class="field">
+        <span>안암역 승강장까지 거리 (m)</span>
+        <input type="number" id="origin-dist" inputmode="numeric" min="1" max="5000" step="1" placeholder="예: 450">
+      </label>
+      <button type="submit" style="width:100%">추가</button>
+      <div class="result-msg bad" id="origin-msg"></div>
+    </form>
+
+    <h2>내 출발지</h2>
+    <div id="origin-list"></div>
+
+    <h2>설정</h2>
+    <div class="card">
+      <label class="field" style="margin:0">
+        <span>출구 → 승강장 여유 시간 (초)</span>
+        <input type="number" id="buffer-sec" inputmode="numeric" min="0" max="600" step="5">
+      </label>
+      <div class="muted small" style="margin-top:6px">계단·개찰구를 지나는 시간이에요. 기본 60초.</div>
+    </div>
+  </section>
+</div>
+
+<nav class="tabbar" role="tablist" aria-label="메뉴">
+  <div class="inner">
+    <button type="button" role="tab" id="tabbtn-judge" data-tab="judge" aria-controls="tab-judge"><span class="ico">🚇</span>판정</button>
+    <button type="button" role="tab" id="tabbtn-speed" data-tab="speed" aria-controls="tab-speed"><span class="ico">🏃</span>속도 측정<span class="rec"></span></button>
+    <button type="button" role="tab" id="tabbtn-origins" data-tab="origins" aria-controls="tab-origins"><span class="ico">📍</span>출발지</button>
+  </div>
+</nav>
+
+<script>
+'use strict';
+
+/* ================= 공통 ================= */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+// localStorage는 사생활 보호 모드 등에서 실패할 수 있으니 항상 try/catch
+const store = {
+  get(key, fallback) {
+    try {
+      const v = localStorage.getItem('anam.' + key);
+      return v === null ? fallback : JSON.parse(v);
+    } catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem('anam.' + key, JSON.stringify(value)); } catch {}
+  },
+};
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// 지금 시각을 API의 recptnDt 형식("YYYY-MM-DD HH:mm:ss", KST)으로
+function nowKstString() {
+  const kst = new Date(Date.now() + 9 * 3600 * 1000);
+  return kst.toISOString().slice(0, 19).replace('T', ' ');
+}
+// "YYYY-MM-DD HH:mm:ss"(KST) → ms
+function parseKst(s) {
+  const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})/);
+  if (!m) return NaN;
+  return Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4] - 9, +m[5], +m[6]);
+}
+
+// 남은 초 → "2분 10초"
+function fmtSec(sec) {
+  const s = Math.max(0, Math.ceil(sec));
+  const m = Math.floor(s / 60), r = s % 60;
+  if (!m) return r + '초';
+  return m + '분' + (r ? ' ' + r + '초' : '');
+}
+const kmh = v => (v * 3.6).toFixed(1);
+
+// 하버사인 공식: 두 좌표 사이 거리(m)
+function haversine(a, b) {
+  const R = 6371000, rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+function geoErrorText(err) {
+  if (!err) return '위치를 가져오지 못했어요.';
+  if (err.code === 1) return '위치 권한이 거부됐어요. 브라우저 설정에서 위치 권한을 허용해 주세요.';
+  if (err.code === 2) return '위치를 찾을 수 없어요. 트인 곳으로 이동해 보세요.';
+  if (err.code === 3) return 'GPS 응답이 늦어요. 잠시 후 다시 시도해 주세요.';
+  return err.message || '위치를 가져오지 못했어요.';
+}
+function geoUnavailableText() {
+  if (!('geolocation' in navigator)) return '이 브라우저는 위치 기능을 지원하지 않아요.';
+  if (!window.isSecureContext) return '위치 기능은 https 주소에서만 동작해요. Vercel 주소로 열어 주세요.';
+  return '';
+}
+
+const SUBWAY_LINE6 = '1006';
+const STATION_POS = { lat: 37.5863, lng: 127.0292 }; // 안암역(대략)
+const GPS_ROUTE_FACTOR = 1.3;                        // 직선거리 → 실제 걷는 거리 보정
+const REFRESH_MS = 20000;
+const SPEED_MODES = [
+  { key: 'walk',   label: '걷기',       icon: '🚶' },
+  { key: 'jog',    label: '가볍게 뛰기', icon: '🏃' },
+  { key: 'sprint', label: '전력 질주',   icon: '⚡' },
+];
+
+/* ================= 상태 ================= */
+const state = {
+  tab: store.get('tab', 'judge'),
+  testMode: store.get('testMode', false),
+  direction: store.get('direction', '전체'),
+  trains: [],       // 남은 시간 계산까지 끝난 열차 목록
+  fetchedAt: 0,     // 마지막으로 성공한 시각 (ms)
+  nextRefreshAt: 0, // 다음 자동 새로고침 시각 (ms)
+  error: null,
+  loading: false,
+  fakeEpoch: 0,     // 테스트 모드 가짜 시간표 기준 시각
+  gps: { dist: null, accuracy: null, at: 0, loading: false, error: null }, // "현재 위치" 출발지
+};
+
+/* ================= 설정값 (localStorage) ================= */
+function getOrigins() {
+  const list = store.get('origins', []);
+  return Array.isArray(list) ? list.filter(o => o && o.id && o.name && Number(o.dist) > 0) : [];
+}
+function getBufferSec() {
+  const v = Number(store.get('bufferSec', 60));
+  return Number.isFinite(v) && v >= 0 ? v : 60;
+}
+function getSpeeds() {
+  const s = store.get('speeds', {});
+  return (s && typeof s === 'object') ? s : {};
+}
+function setSpeed(mode, mps) {
+  const s = getSpeeds();
+  s[mode] = mps;
+  store.set('speeds', s);
+}
+
+/* ================= 탭 ================= */
+function showTab(name) {
+  if (!$('#tab-' + name)) name = 'judge';
+  state.tab = name;
+  store.set('tab', name);
+  $$('.panel').forEach(p => p.classList.toggle('active', p.id === 'tab-' + name));
+  $$('nav.tabbar button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  if (name === 'judge') renderJudge();
+  window.scrollTo(0, 0);
+}
+$$('nav.tabbar button').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+/* =====================================================================
+   ③ 출발지 관리
+   ===================================================================== */
+function renderOriginList() {
+  const origins = getOrigins();
+  $('#origin-list').innerHTML = origins.length
+    ? origins.map(o => `
+      <div class="card origin-item">
+        <div>
+          <div class="name">${escapeHtml(o.name)}</div>
+          <div class="muted small">승강장까지 ${escapeHtml(o.dist)}m</div>
+        </div>
+        <button type="button" class="ghost" data-del="${escapeHtml(o.id)}">삭제</button>
+      </div>`).join('')
+    : '<div class="card empty">아직 등록한 출발지가 없어요.<br>위에서 추가해 주세요.</div>';
+}
+
+$('#origin-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#origin-name').value.trim();
+  const dist = Math.round(Number($('#origin-dist').value));
+  const msg = $('#origin-msg');
+  if (!name) { msg.textContent = '이름을 입력해 주세요.'; return; }
+  if (!(dist >= 1 && dist <= 5000)) { msg.textContent = '거리는 1~5000m 사이로 입력해 주세요.'; return; }
+  msg.textContent = '';
+
+  const origins = getOrigins();
+  const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  origins.push({ id, name, dist });
+  store.set('origins', origins);
+  store.set('originId', id); // 방금 추가한 곳을 판정 탭에서 바로 선택
+  $('#origin-name').value = '';
+  $('#origin-dist').value = '';
+  renderOriginList();
+  renderOriginSelect();
+});
+
+$('#origin-list').addEventListener('click', e => {
+  const btn = e.target.closest('[data-del]');
+  if (!btn) return;
+  const origins = getOrigins();
+  const o = origins.find(x => x.id === btn.dataset.del);
+  if (!o || !confirm(`'${o.name}'을(를) 삭제할까요?`)) return;
+  store.set('origins', origins.filter(x => x.id !== o.id));
+  renderOriginList();
+  renderOriginSelect();
+});
+
+function saveBuffer() {
+  const input = $('#buffer-sec');
+  const v = Number(input.value);
+  if (input.value === '' || !Number.isFinite(v) || v < 0 || v > 600) return false;
+  store.set('bufferSec', Math.round(v));
+  return true;
+}
+$('#buffer-sec').addEventListener('input', saveBuffer);
+$('#buffer-sec').addEventListener('change', () => {
+  if (!saveBuffer()) $('#buffer-sec').value = getBufferSec(); // 잘못된 값이면 되돌림
+  renderJudge();
+});
+
+/* =====================================================================
+   ② 속도 측정 (GPS + 수동 입력)
+   ===================================================================== */
+const GEO_OPTS = { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 };
+const MAX_ACCURACY = 30;   // m, 이보다 부정확한 위치는 버림
+const MIN_STEP = 1.5;      // m, 이보다 작은 이동은 제자리 흔들림
+const MAX_SPEED = 12;      // m/s, 이보다 빠른 순간 속도는 GPS 튐
+
+const meas = {
+  mode: null, watchId: null, wakeLock: null,
+  start: 0,      // 첫 유효 위치 시각 (ms)
+  last: null,    // 마지막으로 인정한 위치 {lat, lng, t}
+  dist: 0,       // 누적 거리 (m)
+  accuracy: null,
+  gpsMsg: '',
+};
+const speedMsg = {}; // 모드별 결과 메시지 {text, cls}
+
+function renderSpeedCards() {
+  const speeds = getSpeeds();
+  const busy = !!meas.mode;
+  $('#speed-cards').innerHTML = SPEED_MODES.map(m => {
+    const v = Number(speeds[m.key]);
+    const me = meas.mode === m.key;
+    const msg = speedMsg[m.key];
+    return `
+      <div class="card">
+        <p class="mode-title">${m.icon} ${m.label}</p>
+        ${v > 0
+          ? `<div class="speed">${v.toFixed(2)} m/s<span class="kmh">${kmh(v)} km/h</span></div>`
+          : '<div class="speed unset">아직 측정 안 함</div>'}
+        <div class="live" id="live-${m.key}" ${me ? '' : 'hidden'}></div>
+        <div class="btn-row">
+          <button type="button" data-act="start" data-mode="${m.key}" ${busy ? 'disabled' : ''}>측정 시작</button>
+          <button type="button" class="danger" data-act="stop" data-mode="${m.key}" ${me ? '' : 'disabled'}>측정 종료</button>
+        </div>
+        <div class="result-msg ${msg ? msg.cls : ''}">${msg ? escapeHtml(msg.text) : ''}</div>
+        <label class="field" style="margin-bottom:0">
+          <span>직접 입력 (km/h)</span>
+          <div class="manual">
+            <input type="number" id="manual-${m.key}" inputmode="decimal" step="0.1" min="1" max="40" placeholder="${v > 0 ? kmh(v) : '예: 5.0'}">
+            <button type="button" class="secondary" data-act="manual" data-mode="${m.key}">저장</button>
+          </div>
+        </label>
+      </div>`;
+  }).join('');
+  updateLive();
+  renderSpeedWarning();
+}
+
+function renderSpeedWarning() {
+  const s = getSpeeds();
+  const w = Number(s.walk), j = Number(s.jog), r = Number(s.sprint);
+  let text = '';
+  if ((w > 0 && j > 0 && w >= j) || (j > 0 && r > 0 && j >= r) || (w > 0 && r > 0 && w >= r)) {
+    text = '속도 순서가 이상해요. 걷기 < 가볍게 뛰기 < 전력 질주 순서가 되도록 다시 측정하거나 입력해 주세요.';
+  }
+  $('#speed-warn').innerHTML = text ? `<div class="warn">${text}</div>` : '';
+}
+
+function updateLive() {
+  if (!meas.mode) return;
+  const el = $('#live-' + meas.mode);
+  if (!el) return;
+  const elapsed = meas.start ? (Date.now() - meas.start) / 1000 : 0;
+  const v = elapsed > 0 ? meas.dist / elapsed : 0;
+  el.hidden = false;
+  el.innerHTML = `
+    <div class="stats">
+      <div class="stat"><b>${Math.round(meas.dist)}m</b><span>거리</span></div>
+      <div class="stat"><b>${Math.floor(elapsed)}초</b><span>시간</span></div>
+      <div class="stat"><b>${kmh(v)}</b><span>km/h</span></div>
+    </div>
+    <div class="gps">${escapeHtml(meas.gpsMsg)}${meas.accuracy != null ? ` · 정확도 ±${Math.round(meas.accuracy)}m` : ''}</div>`;
+}
+
+async function startMeasure(mode) {
+  const why = geoUnavailableText();
+  if (why) { speedMsg[mode] = { text: why + ' 아래 직접 입력을 써 주세요.', cls: 'bad' }; renderSpeedCards(); return; }
+  if (meas.mode) return;
+
+  Object.assign(meas, { mode, start: 0, last: null, dist: 0, accuracy: null, gpsMsg: 'GPS 신호 찾는 중…' });
+  delete speedMsg[mode];
+  meas.watchId = navigator.geolocation.watchPosition(onMeasurePos, onMeasureErr, GEO_OPTS);
+  document.body.classList.add('measuring');
+  renderSpeedCards();
+
+  // 측정 중 화면이 꺼지지 않게 (지원하는 브라우저만)
+  try { if (navigator.wakeLock) meas.wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+}
+
+function onMeasurePos(pos) {
+  if (!meas.mode) return;
+  const { latitude, longitude, accuracy } = pos.coords;
+  meas.accuracy = accuracy;
+  if (accuracy > MAX_ACCURACY) {
+    meas.gpsMsg = '정확도가 낮아 기다리는 중';
+    return updateLive();
+  }
+  const now = Date.now();
+  const cur = { lat: latitude, lng: longitude, t: now };
+
+  if (!meas.last) {               // 첫 유효 위치 → 여기서부터 시간 측정
+    meas.last = cur;
+    meas.start = now;
+    meas.gpsMsg = '측정 중';
+    return updateLive();
+  }
+
+  const d = haversine(meas.last, cur);
+  const dt = (now - meas.last.t) / 1000;
+  if (d < MIN_STEP) {             // 제자리 흔들림: 기준점은 그대로 두고 무시
+    return updateLive();
+  }
+  if (dt <= 0 || d / dt > MAX_SPEED) { // 위치 튐: 무시
+    meas.gpsMsg = '튀는 위치를 무시했어요';
+    return updateLive();
+  }
+  meas.dist += d;
+  meas.last = cur;
+  meas.gpsMsg = '측정 중';
+  updateLive();
+}
+
+function onMeasureErr(err) {
+  if (!meas.mode) return;
+  if (err.code === 1) { // 권한 거부는 계속해도 소용없으니 중단
+    const mode = meas.mode;
+    stopMeasure(false);
+    speedMsg[mode] = { text: geoErrorText(err) + ' 아래 직접 입력을 써 주세요.', cls: 'bad' };
+    renderSpeedCards();
+    return;
+  }
+  meas.gpsMsg = geoErrorText(err); // 시간 초과 등은 계속 기다림
+  updateLive();
+}
+
+function stopMeasure(save = true) {
+  const mode = meas.mode;
+  if (!mode) return;
+  const end = Date.now();
+  if (meas.watchId != null) navigator.geolocation.clearWatch(meas.watchId);
+  if (meas.wakeLock) { meas.wakeLock.release().catch(() => {}); meas.wakeLock = null; }
+  meas.watchId = null;
+  meas.mode = null;
+  document.body.classList.remove('measuring');
+
+  if (save) {
+    const elapsed = meas.start ? (end - meas.start) / 1000 : 0;
+    if (!meas.start) {
+      speedMsg[mode] = { text: '정확한 GPS 위치를 받지 못했어요. 트인 곳에서 다시 하거나 직접 입력해 주세요.', cls: 'bad' };
+    } else if (elapsed < 5 || meas.dist < 5) {
+      speedMsg[mode] = { text: `측정이 너무 짧아요 (${Math.round(meas.dist)}m, ${Math.round(elapsed)}초). 더 길게 측정해 주세요.`, cls: 'bad' };
+    } else {
+      const v = meas.dist / elapsed;
+      setSpeed(mode, v);
+      speedMsg[mode] = { text: `저장했어요: ${Math.round(meas.dist)}m / ${Math.round(elapsed)}초 → ${v.toFixed(2)} m/s (${kmh(v)} km/h)`, cls: 'ok' };
+    }
+  }
+  renderSpeedCards();
+  renderJudge();
+}
+
+function saveManual(mode) {
+  const input = $('#manual-' + mode);
+  const k = Number(input.value);
+  if (!(k >= 1 && k <= 40)) {
+    speedMsg[mode] = { text: '1~40 km/h 사이 숫자를 입력해 주세요.', cls: 'bad' };
+  } else {
+    const v = k / 3.6;
+    setSpeed(mode, v);
+    speedMsg[mode] = { text: `저장했어요: ${k} km/h (${v.toFixed(2)} m/s)`, cls: 'ok' };
+  }
+  renderSpeedCards();
+  renderJudge();
+}
+
+$('#speed-cards').addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const { act, mode } = btn.dataset;
+  if (act === 'start') startMeasure(mode);
+  else if (act === 'stop') stopMeasure(true);
+  else if (act === 'manual') saveManual(mode);
+});
+$('#speed-cards').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id && e.target.id.startsWith('manual-')) saveManual(e.target.id.slice(7));
+});
+
+/* =====================================================================
+   ① 판정
+   ===================================================================== */
+
+/* ---------- 출발지 선택 ---------- */
+function renderOriginSelect() {
+  const origins = getOrigins();
+  const sel = $('#origin-select');
+  const want = store.get('originId', '');
+  sel.innerHTML =
+    origins.map(o => `<option value="${escapeHtml(o.id)}">${escapeHtml(o.name)} (${escapeHtml(o.dist)}m)</option>`).join('') +
+    '<option value="gps">현재 위치 (GPS 추정)</option>';
+  sel.value = $$('option', sel).some(o => o.value === want) ? want : sel.options[0].value;
+  if (sel.value === 'gps') requestGpsDistance();
+  renderJudge();
+}
+$('#origin-select').addEventListener('change', e => {
+  store.set('originId', e.target.value);
+  if (e.target.value === 'gps') requestGpsDistance(true);
+  renderJudge();
+});
+
+// "현재 위치": 안암역까지 직선거리 × 1.3
+function requestGpsDistance(force = false) {
+  const why = geoUnavailableText();
+  if (why) { state.gps.error = why; return; }
+  if (state.gps.loading) return;
+  if (!force && state.gps.at && Date.now() - state.gps.at < 15000) return;
+  state.gps.loading = true;
+  navigator.geolocation.getCurrentPosition(pos => {
+    const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    Object.assign(state.gps, {
+      dist: Math.round(haversine(here, STATION_POS) * GPS_ROUTE_FACTOR),
+      accuracy: pos.coords.accuracy, at: Date.now(), loading: false, error: null,
+    });
+    renderJudge();
+  }, err => {
+    Object.assign(state.gps, { loading: false, error: geoErrorText(err) });
+    renderJudge();
+  }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 });
+}
+
+// 지금 선택된 출발지의 거리 정보
+function currentOrigin() {
+  const id = $('#origin-select').value;
+  if (id === 'gps') {
+    const g = state.gps;
+    return { name: '현재 위치', dist: g.dist, estimated: true, loading: g.loading, error: g.dist == null ? g.error : null };
+  }
+  const o = getOrigins().find(x => x.id === id);
+  return o ? { name: o.name, dist: Number(o.dist), estimated: false } : { name: '', dist: null, error: '출발지를 선택해 주세요.' };
+}
+
+function renderOriginInfo(origin) {
+  const buffer = getBufferSec();
+  let html;
+  if (origin.dist != null) {
+    html = `${origin.estimated ? '약 ' : ''}<b>${origin.dist}m</b>${origin.estimated ? ' (추정)' : ''} · 여유 시간 ${buffer}초`;
+    if (origin.estimated && state.gps.accuracy) html += ` · GPS ±${Math.round(state.gps.accuracy)}m`;
+  } else if (origin.loading) {
+    html = '현재 위치 확인 중…';
+  } else {
+    html = escapeHtml(origin.error || '');
+    if (!getOrigins().length) html += ' 출발지 탭에서 자주 가는 곳을 등록할 수 있어요.';
+  }
+  $('#origin-info').innerHTML = html;
+}
+
+/* ---------- 방향 ---------- */
+function renderDirection() {
+  $$('#dir-seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.dir === state.direction)));
+}
+$$('#dir-seg button').forEach(b => b.addEventListener('click', () => {
+  state.direction = b.dataset.dir;
+  store.set('direction', state.direction);
+  renderDirection();
+  renderJudge();
+}));
+
+/* ---------- 남은 시간 계산 (PROJECT.md 4번 규칙) ---------- */
+const ARVL_CD_SEC = { '4': 150, '5': 130, '3': 90, '0': 30, '1': 0 };
+
+// 반환: { sec, estimated } / 이미 떠난 열차면 null / 알 수 없으면 sec = NaN
+function estimateSeconds(t, now = Date.now()) {
+  const cd = String(t.arvlCd ?? '').trim();
+  if (cd === '2') return null; // 2: 출발 → 이미 떠남, 목록에서 제외
+
+  // 1. barvlDt > 0 이면 그 값 − (recptnDt 이후 지난 시간)
+  const barvl = Number(t.barvlDt);
+  if (barvl > 0) {
+    const rec = parseKst(t.recptnDt);
+    let elapsed = Number.isFinite(rec) ? (now - rec) / 1000 : 0;
+    elapsed = Math.min(Math.max(elapsed, 0), barvl); // 기기 시계 오차 대비
+    return { sec: barvl - elapsed, estimated: false };
+  }
+
+  // 2. arvlMsg2의 "N분 M초 후" / "N분 후" / "M초 후"
+  const msg = String(t.arvlMsg2 || '');
+  let m = msg.match(/(\d+)\s*분\s*(?:(\d+)\s*초\s*)?후/);
+  if (m) return { sec: +m[1] * 60 + +(m[2] || 0), estimated: true };
+  m = msg.match(/(\d+)\s*초\s*후/);
+  if (m) return { sec: +m[1], estimated: true };
+
+  // 3. "[N]번째 전역" → N × 120초
+  m = msg.match(/\[(\d+)\]\s*번째\s*전역/);
+  if (m) return { sec: +m[1] * 120, estimated: true };
+
+  // 4. arvlCd로 추정
+  if (cd in ARVL_CD_SEC) return { sec: ARVL_CD_SEC[cd], estimated: true };
+
+  return { sec: NaN, estimated: true };
+}
+
+/* ---------- 판정 (PROJECT.md 6번) ---------- */
+// 반환: { cls: ok|jog|run|no|none, title, details: [], alert }
+function judge(remain, origin, speeds, buffer) {
+  const missing = SPEED_MODES.filter(m => !(Number(speeds[m.key]) > 0)).map(m => m.label);
+  if (missing.length) {
+    return { cls: 'none', title: '속도 측정 탭에서 먼저 측정해 주세요', details: ['아직 없음: ' + missing.join(', ')] };
+  }
+  if (origin.dist == null) {
+    return { cls: 'none', title: origin.loading ? '현재 위치 확인 중…' : '출발지 거리를 알 수 없어요', details: [] };
+  }
+  if (!Number.isFinite(remain)) {
+    return { cls: 'none', title: '도착 시간을 알 수 없어요', details: [] };
+  }
+
+  const walk = Number(speeds.walk), jog = Number(speeds.jog), sprint = Number(speeds.sprint);
+  const dist = origin.dist;
+  const avail = remain - buffer;
+  if (avail <= 0) {
+    return { cls: 'no', title: '전속력으로 뛰어도 못 잡아요', details: [`여유 시간(${buffer}초)보다 먼저 도착해요`] };
+  }
+  const need = dist / avail;
+  const needText = `필요 속도 ${kmh(need)} km/h · ${Math.floor(avail)}초 안에 ${dist}m`;
+
+  if (need <= walk) return { cls: 'ok', title: '걸어도 돼요', details: [needText] };
+  if (need <= jog) return { cls: 'jog', title: '가볍게 뛰면 잡아요!', details: [needText] };
+  if (need <= sprint) {
+    const pct = Math.ceil(need / sprint * 100);
+    const r = { cls: 'run', title: `전력의 ${pct}%로 뛰세요`, details: [needText] };
+    if (dist > 250) r.alert = '이 거리를 전력으로 유지하기는 어려워요';
+    return r;
+  }
+  return { cls: 'no', title: '전속력으로 뛰어도 못 잡아요', details: [needText] };
+}
+
+/* ---------- 테스트 모드 가짜 데이터 ---------- */
+// API 응답(realtimeArrivalList)과 같은 필드. 시간이 실제로 흐르도록 fakeEpoch 기준 시간표를 쓰고,
+// 남은 시간 계산 규칙(1: barvlDt / 2: "N분 M초 후" / 3: "[N]번째 전역" / 4: arvlCd)을 골고루 거치게 만든다.
+function makeFakeTrains() {
+  if (!state.fakeEpoch) state.fakeEpoch = Date.now();
+  const elapsed = (Date.now() - state.fakeEpoch) / 1000;
+  const recptnDt = nowKstString();
+  const CYCLE = 420; // 7분마다 같은 패턴 반복
+  const plan = [
+    { offset: 45,  dir: '상행', kind: 'barvl' },
+    { offset: 130, dir: '하행', kind: 'msg' },
+    { offset: 360, dir: '상행', kind: 'station' },
+    { offset: 300, dir: '하행', kind: 'barvl' },
+  ];
+  const out = [];
+  for (let k = 0; k < 30; k++) {
+    for (const p of plan) {
+      const r = Math.round(p.offset + k * CYCLE - elapsed);
+      if (r < 0 || r > 600) continue;
+      out.push(fakeTrain(p.dir, p.kind, r, recptnDt));
+    }
+  }
+  return out;
+}
+function fakeTrain(dir, kind, r, recptnDt) {
+  const up = dir === '상행';
+  const t = {
+    subwayId: SUBWAY_LINE6, updnLine: dir,
+    trainLineNm: up ? '응암순환행 - 보문방면' : '신내행 - 고려대방면',
+    barvlDt: '0', arvlMsg2: '', arvlCd: '99', recptnDt,
+  };
+  const prev = up ? '고려대' : '보문';
+  if (r <= 0) { t.arvlMsg2 = '안암 도착'; t.arvlCd = '1'; }
+  else if (kind === 'barvl') { t.barvlDt = String(r); t.arvlMsg2 = fmtSec(r) + ' 후 (' + prev + ')'; }
+  else if (kind === 'msg' || r < 240) { t.arvlMsg2 = fmtSec(r) + ' 후 (' + prev + ')'; }
+  else { const n = Math.round(r / 120); t.arvlMsg2 = `[${n}]번째 전역 (${prev})`; }
+  return t;
+}
+
+function setTestMode(on) {
+  state.testMode = on;
+  store.set('testMode', on);
+  $('#test-toggle').checked = on;
+  document.body.classList.toggle('test-mode', on);
+  state.trains = [];
+  state.fetchedAt = 0;
+  state.error = null;
+  if (on) state.fakeEpoch = Date.now();
+  refresh();
+}
+$('#test-toggle').addEventListener('change', e => setTestMode(e.target.checked));
+
+/* ---------- 데이터 가져오기 ---------- */
+async function fetchTrains() {
+  if (state.testMode) return makeFakeTrains();
+
+  const res = await fetch('/api/subway', { cache: 'no-store' });
+  let data;
+  try { data = await res.json(); } catch { throw new Error('서버 응답을 읽을 수 없어요. (HTTP ' + res.status + ')'); }
+
+  const em = data.errorMessage;
+  if (em && Number(em.status) !== 200) throw new Error(em.message || '지하철 API 오류');
+
+  return (data.realtimeArrivalList || []).filter(t => String(t.subwayId) === SUBWAY_LINE6);
+}
+
+async function refresh() {
+  if (state.loading) return;
+  state.loading = true;
+  $('#refresh-btn').disabled = true;
+  if ($('#origin-select').value === 'gps') requestGpsDistance();
+  const wasTest = state.testMode;
+  try {
+    const raw = await fetchTrains();
+    if (wasTest !== state.testMode) return; // 받는 사이 모드가 바뀌면 버림
+    const now = Date.now();
+    state.trains = raw
+      .map(t => ({ t, est: estimateSeconds(t, now) }))
+      .filter(x => x.est) // 이미 떠난 열차 제외
+      .map(x => ({ ...x.t, sec: x.est.sec, estimated: x.est.estimated, baseAt: now }));
+    state.fetchedAt = now;
+    state.error = null;
+  } catch (err) {
+    // 실패해도 이전 목록은 남겨서 카운트다운은 계속
+    state.error = location.protocol === 'file:'
+      ? '파일로 직접 열면 API를 부를 수 없어요. 테스트 모드를 켜거나 Vercel 주소로 열어 주세요.'
+      : ((err && err.message) || String(err));
+  } finally {
+    state.loading = false;
+    state.nextRefreshAt = Date.now() + REFRESH_MS;
+    $('#refresh-btn').disabled = false;
+    renderJudge();
+  }
+}
+$('#refresh-btn').addEventListener('click', refresh);
+
+/* ---------- 판정 탭 그리기 ---------- */
+function remainingOf(train, now) {
+  return train.sec - (now - train.baseAt) / 1000;
+}
+
+function renderJudge() {
+  const now = Date.now();
+  const origin = currentOrigin();
+  renderOriginInfo(origin);
+
+  // 상태줄
+  let status = '';
+  if (state.loading && !state.fetchedAt) status = '불러오는 중…';
+  else if (state.fetchedAt) {
+    const t = new Date(state.fetchedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const left = Math.max(0, Math.ceil((state.nextRefreshAt - now) / 1000));
+    status = (state.testMode ? '가짜 데이터 · ' : '') + t + ' 기준' + (state.loading ? ' · 새로고침 중…' : ` · ${left}초 후 자동 새로고침`);
+  }
+  $('#status').textContent = status;
+
+  // 에러
+  const errBox = $('#judge-error');
+  if (state.error) {
+    errBox.innerHTML = `<div class="error">${escapeHtml(state.error)}
+      ${state.testMode ? '' : '<br><button type="button" class="secondary" id="use-test">테스트 모드로 보기</button>'}</div>`;
+  } else {
+    errBox.innerHTML = '';
+  }
+
+  const list = $('#train-list');
+  if (!state.fetchedAt) { list.innerHTML = ''; return; }
+
+  const speeds = getSpeeds();
+  const buffer = getBufferSec();
+
+  // 남은 시간 + 판정을 전부 계산 (다음 열차 안내에 쓰려고 방향 필터 전에)
+  const all = state.trains
+    .map(t => {
+      const remain = remainingOf(t, now);
+      return { t, remain, v: judge(remain, origin, speeds, buffer) };
+    })
+    .filter(x => !(x.remain < -30)) // 도착 후 30초 지나면 목록에서 뺌
+    .sort((a, b) => (Number.isFinite(a.remain) ? a.remain : 1e9) - (Number.isFinite(b.remain) ? b.remain : 1e9));
+
+  const shown = all.filter(x => state.direction === '전체' || x.t.updnLine === state.direction);
+  if (!shown.length) {
+    list.innerHTML = `<div class="card empty">${state.direction === '전체' ? '' : state.direction + ' '}다가오는 열차가 없어요.</div>`;
+    return;
+  }
+
+  list.innerHTML = shown.map(x => {
+    const { t, remain, v } = x;
+    const details = [...v.details];
+
+    // 못 잡으면 같은 방향 다음 열차 안내
+    if (v.cls === 'no') {
+      const later = all.filter(y => y.t.updnLine === t.updnLine && y.remain > remain);
+      const ok = later.find(y => y.v.cls !== 'no' && y.v.cls !== 'none');
+      if (ok) details.push(`다음 열차 ${fmtSec(ok.remain)} 후 → ${ok.v.title}`);
+      else if (later.length) details.push(`다음 열차 ${fmtSec(later[0].remain)} 후 (이것도 어려워요)`);
+      else details.push('다음 열차 정보가 아직 없어요');
+    }
+
+    let timeHtml;
+    if (!Number.isFinite(remain)) timeHtml = '시간 정보 없음';
+    else if (remain <= 0) timeHtml = '도착';
+    else timeHtml = fmtSec(remain) + (t.estimated ? '<span class="est">(추정)</span>' : '');
+
+    return `
+      <div class="card train">
+        <div class="info">
+          <div class="row between">
+            <span class="dest">${escapeHtml(t.trainLineNm)}</span>
+            <span class="dir">${escapeHtml(t.updnLine)}</span>
+          </div>
+          <div class="time">${timeHtml}</div>
+          <div class="msg">${escapeHtml(t.arvlMsg2)}</div>
+        </div>
+        <div class="verdict ${v.cls}">${escapeHtml(v.title)}
+          ${details.map(d => `<span class="detail">${escapeHtml(d)}</span>`).join('')}
+          ${v.alert ? `<span class="detail alert">⚠ ${escapeHtml(v.alert)}</span>` : ''}
+        </div>
+      </div>`;
+  }).join('');
+}
+$('#judge-error').addEventListener('click', e => {
+  if (e.target.id === 'use-test') setTestMode(true);
+});
+
+/* ================= 1초 타이머: 카운트다운 · 측정 표시 · 20초 자동 새로고침 ================= */
+setInterval(() => {
+  if (document.hidden) return;
+  if (meas.mode) updateLive();
+  if (!state.loading && Date.now() >= state.nextRefreshAt) refresh();
+  else if (state.tab === 'judge') renderJudge();
+}, 1000);
+
+// 다른 앱 갔다가 돌아오면 바로 새로고침
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && Date.now() - state.fetchedAt > REFRESH_MS) refresh();
+});
+
+/* ================= 시작 ================= */
+document.body.classList.toggle('test-mode', state.testMode);
+$('#test-toggle').checked = state.testMode;
+$('#buffer-sec').value = getBufferSec();
+renderDirection();
+renderOriginList();
+renderOriginSelect();
+renderSpeedCards();
+showTab(state.tab);
+refresh();
+</script>
+</body>
+</html>
