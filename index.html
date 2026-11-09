@@ -418,6 +418,7 @@ const state = {
   error: null,
   loading: false,
   fakeEpoch: 0,     // 테스트 모드 가짜 시간표 기준 시각
+  source: 'arrival', // 'arrival' 도착정보 / 'position' 열차 위치로 추정
   gps: { dist: null, accuracy: null, at: 0, loading: false, error: null }, // "현재 위치" 출발지
 };
 
@@ -789,6 +790,13 @@ function estimateSeconds(t, now = Date.now()) {
   const cd = String(t.arvlCd ?? '').trim();
   if (cd === '2') return null; // 2: 출발 → 이미 떠남, 목록에서 제외
 
+  // 0. 도착정보가 없어 서버가 열차 위치로 추정한 값 (recptnDt 이후 지난 시간만큼 뺌)
+  if (t.estSec != null && Number.isFinite(Number(t.estSec))) {
+    const rec = parseKst(t.recptnDt);
+    const elapsed = Number.isFinite(rec) ? Math.min(Math.max((now - rec) / 1000, 0), 120) : 0;
+    return { sec: Math.max(0, Number(t.estSec) - elapsed), estimated: true };
+  }
+
   // 1. barvlDt > 0 이면 그 값 − (recptnDt 이후 지난 시간)
   const barvl = Number(t.barvlDt);
   if (barvl > 0) {
@@ -912,6 +920,7 @@ async function fetchTrains() {
   const em = data.errorMessage;
   if (em && Number(em.status) !== 200) throw new Error(em.message || '지하철 API 오류');
 
+  state.source = (data._proxy && data._proxy.source) || 'arrival';
   return (data.realtimeArrivalList || []).filter(t => String(t.subwayId) === SUBWAY_LINE6);
 }
 
@@ -961,7 +970,8 @@ function renderJudge() {
   else if (state.fetchedAt) {
     const t = new Date(state.fetchedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const left = Math.max(0, Math.ceil((state.nextRefreshAt - now) / 1000));
-    status = (state.testMode ? '가짜 데이터 · ' : '') + t + ' 기준' + (state.loading ? ' · 새로고침 중…' : ` · ${left}초 후 자동 새로고침`);
+    const src = state.testMode ? '가짜 데이터 · ' : (state.source === 'position' ? '열차 위치로 추정 · ' : '');
+    status = src + t + ' 기준' + (state.loading ? ' · 새로고침 중…' : ` · ${left}초 후 자동 새로고침`);
   }
   $('#status').textContent = status;
 
